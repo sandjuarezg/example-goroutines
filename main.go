@@ -32,10 +32,13 @@ func main() {
 
 	var r = csv.NewReader(file)
 
-	for err == nil {
+	for err != io.EOF {
 		wg.Add(1)
 		go func() {
-			err = insertData(r, db, &mutex, &wg)
+			defer mutex.Unlock()
+			defer wg.Done()
+			mutex.Lock()
+			err = insertData(r, db)
 		}()
 	}
 
@@ -44,11 +47,7 @@ func main() {
 	fmt.Println("Data added successfully")
 }
 
-func insertData(r *csv.Reader, db *sql.DB, mutex *sync.Mutex, wg *sync.WaitGroup) (err error) {
-	defer mutex.Unlock()
-	defer wg.Done()
-	mutex.Lock()
-
+func insertData(r *csv.Reader, db *sql.DB) (err error) {
 	smt, err := db.Prepare("INSERT INTO people (nombre, apellidoP, apellidoM, genero, edad) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
@@ -57,9 +56,7 @@ func insertData(r *csv.Reader, db *sql.DB, mutex *sync.Mutex, wg *sync.WaitGroup
 
 	data, err := r.Read()
 	if err != nil {
-		if err == io.EOF {
-			return
-		}
+		return
 	}
 
 	var people []string
