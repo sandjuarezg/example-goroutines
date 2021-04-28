@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -34,12 +35,13 @@ func main() {
 
 	for err != io.EOF {
 		wg.Add(1)
-		go func() {
-			defer mutex.Unlock()
-			defer wg.Done()
-			mutex.Lock()
+		go func(m *sync.Mutex, w *sync.WaitGroup) {
+			m.Lock()
 			err = insertData(r, db)
-		}()
+			m.Unlock()
+			w.Done()
+		}(&mutex, &wg)
+		fmt.Println(runtime.NumGoroutine())
 	}
 
 	wg.Wait()
