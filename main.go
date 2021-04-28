@@ -45,11 +45,11 @@ func main() {
 
 	for i := 0; i < len(people); i = i + 5 {
 		wg.Add(1)
-		insertData(i, db, people, &mutex, &wg)
+		go insertData(i, db, people, &mutex, &wg)
 	}
 
 	/*go func() {
-		for _ = range time.Tick(1 * time.Millisecond) {
+		for _ = range time.Tick(300 * time.Millisecond) {
 			fmt.Println("Mira porque el mundo se destruye:", runtime.NumGoroutine())
 		}
 	}()*/
