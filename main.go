@@ -5,38 +5,18 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/sandjuarezg/exampleGoroutines/migration"
 )
 
 func main() {
 	var wg = sync.WaitGroup{}
 	var mutex = sync.Mutex{}
-
-	var _, err = os.Stat("./database.sql")
-	if os.IsNotExist(err) {
-		log.Fatal(err)
-	}
-
-	var file, _ = os.Open("./database.sql")
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	_, err = os.Stat("./people.db")
-	if os.IsNotExist(err) {
-		var file, err = os.Create("./people.db")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer file.Close()
-	}
+	migration.SqlMigration()
 
 	db, err := sql.Open("sqlite3", "./people.db")
 	if err != nil {
@@ -44,15 +24,7 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Query("SELECT * from people")
-	if err != nil {
-		_, err = db.Exec(string(content))
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	file, err = os.Open("./files/people.csv")
+	file, err := os.Open("./files/people.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
