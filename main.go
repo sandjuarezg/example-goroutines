@@ -1,3 +1,7 @@
+//Aqui no es necesario el mutex
+//Debido a que cada goroutine se crea en cada iteración
+//Por lo tanto, cada uno tiene un valor distinto
+
 package main
 
 import (
@@ -6,7 +10,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"sync"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sandjuarezg/example-goroutines/migration"
@@ -14,7 +20,6 @@ import (
 
 func main() {
 	var wg = sync.WaitGroup{}
-	var mutex = sync.Mutex{}
 	var people []string
 	migration.SqlMigration()
 
@@ -45,22 +50,21 @@ func main() {
 
 	for i := 0; i < len(people); i = i + 5 {
 		wg.Add(1)
-		go insertData(i, db, people, &mutex, &wg)
+		go insertData(i, db, people, &wg)
 	}
 
-	/*go func() {
+	go func() {
 		for _ = range time.Tick(300 * time.Millisecond) {
 			fmt.Println("Mira porque el mundo se destruye:", runtime.NumGoroutine())
 		}
-	}()*/
+	}()
 
 	wg.Wait()
 
 	fmt.Println("Finish")
 }
 
-func insertData(i int, db *sql.DB, people []string, mutex *sync.Mutex, wg *sync.WaitGroup) {
-	mutex.Lock()
+func insertData(i int, db *sql.DB, people []string, wg *sync.WaitGroup) {
 	smt, err := db.Prepare("INSERT INTO people (nombre, apellidoP, apellidoM, genero, edad) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
@@ -71,6 +75,5 @@ func insertData(i int, db *sql.DB, people []string, mutex *sync.Mutex, wg *sync.
 	if err != nil {
 		log.Fatal(err)
 	}
-	mutex.Unlock()
 	wg.Done()
 }
